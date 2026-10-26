@@ -71,6 +71,7 @@ CURRENCIES: dict[str, Currency] = {
 
 
 def get_currency(code: str) -> Currency:
+    """Return a currency from the registry after validating its code"""
     validate_currency_code(code)
     if code not in CURRENCIES:
         raise CurrencyNotFoundError(f"Неизвестная валюта {code!r}")

@@ -97,14 +97,17 @@ def buy(
     amount: float,
     portfolio_repo: PortfolioRepository,
     currency_repo: CurrencyRepository,
+    rates_ttl: int,
 ) -> Trade:
-    """Buy currency, paying from the USD wallet"""
+    """Buy currency at a fresh rate, paying from the USD wallet"""
     currency_code = get_currency(currency_code).code
     portfolio = portfolio_repo.get_portfolio(user)
+    rate, _, _ = get_rate(
+        currency_code, DEFAULT_BASE_CURRENCY, currency_repo, rates_ttl
+    )
     wallet = portfolio.get_or_add_wallet(currency_code)
     base_wallet = portfolio.get_or_add_wallet(DEFAULT_BASE_CURRENCY)
     old_balance, base_old_balance = wallet.balance, base_wallet.balance
-    rate = currency_repo.get_price(currency_code, DEFAULT_BASE_CURRENCY)
     cost = amount * rate
 
     if currency_code != DEFAULT_BASE_CURRENCY:
@@ -131,8 +134,9 @@ def sell(
     amount: float,
     portfolio_repo: PortfolioRepository,
     currency_repo: CurrencyRepository,
+    rates_ttl: int,
 ) -> Trade:
-    """Sell currency, adding the proceeds to the USD wallet"""
+    """Sell currency at a fresh rate, adding the proceeds to the USD wallet"""
     currency_code = get_currency(currency_code).code
     portfolio = portfolio_repo.get_portfolio(user)
     if currency_code not in portfolio.wallets:
@@ -141,10 +145,12 @@ def sell(
             "Добавьте валюту: она создаётся автоматически при первой покупке."
         )
 
+    rate, _, _ = get_rate(
+        currency_code, DEFAULT_BASE_CURRENCY, currency_repo, rates_ttl
+    )
     wallet = portfolio.get_wallet(currency_code)
     base_wallet = portfolio.get_or_add_wallet(DEFAULT_BASE_CURRENCY)
     old_balance, base_old_balance = wallet.balance, base_wallet.balance
-    rate = currency_repo.get_price(currency_code, DEFAULT_BASE_CURRENCY)
     cost = amount * rate
 
     wallet.withdraw(amount)

@@ -1,3 +1,4 @@
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -123,6 +124,8 @@ class JsonPortfolioRepository(JsonListRepository):
 class JsonCurrencyRepository:
     """Rates cache in rates.json and their history in exchange_rates.json"""
 
+    __update_lock = threading.Lock()
+
     def __init__(self, rates_path: Path, history_path: Path):
         self.rates_path = rates_path
         self.history_path = history_path
@@ -151,33 +154,35 @@ class JsonCurrencyRepository:
 
     def refresh_history(self, records: list[dict[str, Any]]) -> None:
         """Append new valid records to the history"""
-        history = self._load_history()
-        known = {record["id"] for record in history}
-        history += [r for r in records if r["id"] not in known and _is_valid(r)]
-        self.db.save(self.history_path, history)
+        with self.__update_lock:
+            history = self._load_history()
+            known = {record["id"] for record in history}
+            history += [r for r in records if r["id"] not in known and _is_valid(r)]
+            self.db.save(self.history_path, history)
 
     def refresh(self) -> int:
         """Copy rates fresher than the cached ones from the history"""
-        snapshot = self._load_snapshot()
-        pairs = snapshot["pairs"]
-        history = sorted(self._load_history(), key=lambda r: r["timestamp"])
-        latest = {f"{r['from_currency']}_{r['to_currency']}": r for r in history}
-        fresh = {
-            pair: r
-            for pair, r in latest.items()
-            if pair not in pairs or r["timestamp"] > pairs[pair]["updated_at"]
-        }
-        pairs |= {
-            pair: {
-                "rate": r["rate"],
-                "updated_at": r["timestamp"],
-                "source": r["source"],
+        with self.__update_lock:
+            snapshot = self._load_snapshot()
+            pairs = snapshot["pairs"]
+            history = sorted(self._load_history(), key=lambda r: r["timestamp"])
+            latest = {f"{r['from_currency']}_{r['to_currency']}": r for r in history}
+            fresh = {
+                pair: r
+                for pair, r in latest.items()
+                if pair not in pairs or r["timestamp"] > pairs[pair]["updated_at"]
             }
-            for pair, r in fresh.items()
-        }
-        snapshot["last_refresh"] = utc_now()
-        self.db.save(self.rates_path, snapshot)
-        return len(fresh)
+            pairs |= {
+                pair: {
+                    "rate": r["rate"],
+                    "updated_at": r["timestamp"],
+                    "source": r["source"],
+                }
+                for pair, r in fresh.items()
+            }
+            snapshot["last_refresh"] = utc_now()
+            self.db.save(self.rates_path, snapshot)
+            return len(fresh)
 
     def _usd_rate(self, code: str) -> float:
         return 1.0 if code == DEFAULT_BASE_CURRENCY else self._pair(code)["rate"]

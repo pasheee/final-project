@@ -6,6 +6,7 @@ LOGGING_FILEPATH = Path.cwd() / "logs" / "actions.log"
 
 
 def setup_logging(fmt: str, level: str = "INFO") -> None:
+    """Configure file logging with rotation and the selected level"""
     LOGGING_FILEPATH.parent.mkdir(exist_ok=True)
 
     formatter = logging.Formatter(fmt, datefmt="%Y-%m-%dT%H:%M:%S")

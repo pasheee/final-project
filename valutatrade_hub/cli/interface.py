@@ -23,7 +23,7 @@ from .utils import fmt_rate, print_portfolio, print_trade
 @handle_errors
 def cmd_register(args: Namespace, ctx: AppContext) -> None:
     """Register a new user with an empty portfolio"""
-    user, port = register(args.username, args.password, ctx.users, ctx.portfolios)
+    user, _ = register(args.username, args.password, ctx.users, ctx.portfolios)
     print(
         f"Пользователь {user.username!r} зарегистрирован (id={user.user_id}). "
         f"Войдите: login --username {user.username} --password **** "
@@ -52,7 +52,9 @@ def cmd_show_portfolio(args: Namespace, ctx: AppContext, user: User) -> None:
 @require_login
 def cmd_buy(args: Namespace, ctx: AppContext, user: User) -> None:
     """Buy currency, paying from the USD wallet"""
-    trade = buy(user, args.currency, args.amount, ctx.portfolios, ctx.rates)
+    trade = buy(
+        user, args.currency, args.amount, ctx.portfolios, ctx.rates, ctx.rates_ttl
+    )
     print_trade("Покупка выполнена", "Оценочная стоимость покупки", trade)
 
 
@@ -60,7 +62,9 @@ def cmd_buy(args: Namespace, ctx: AppContext, user: User) -> None:
 @require_login
 def cmd_sell(args: Namespace, ctx: AppContext, user: User) -> None:
     """Sell currency, adding the proceeds to the USD wallet"""
-    trade = sell(user, args.currency, args.amount, ctx.portfolios, ctx.rates)
+    trade = sell(
+        user, args.currency, args.amount, ctx.portfolios, ctx.rates, ctx.rates_ttl
+    )
     print_trade("Продажа выполнена", "Оценочная выручка", trade)
 
 

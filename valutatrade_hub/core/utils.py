@@ -9,6 +9,7 @@ def utc_now() -> str:
 
 
 def is_expired(timestamp: str, ttl: int) -> bool:
+    """Check whether the timestamp is older than the TTL"""
     age = datetime.now(timezone.utc) - datetime.fromisoformat(timestamp)
     return age > timedelta(seconds=ttl)
 

@@ -20,6 +20,7 @@ from valutatrade_hub.parser_service.updater import RatesUpdater
 
 
 def main() -> None:
+    """Initialize storage and start the scheduler and command loop"""
     settings = SettingsLoader(CONFIG)
     settings.load()
     db = DatabaseManager()

@@ -14,6 +14,8 @@ logger = logging.getLogger(__name__)
 
 
 def log_action(verbose: bool = False) -> Callable[[TradeFunc], TradeFunc]:
+    """Log trades, errors and optional wallet balance changes"""
+
     def decorator(func: TradeFunc) -> TradeFunc:
         @wraps(func)
         def wrapper(
